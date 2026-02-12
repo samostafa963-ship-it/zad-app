@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZAD | دخول وتسجيل</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f4; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: #fff; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
+        .logo { color: #ff6d00; font-size: 35px; font-weight: bold; margin-bottom: 20px; }
+        input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 12px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 15px; background: #ff6d00; color: #fff; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .switch { margin-top: 15px; color: #666; font-size: 14px; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="logo">ZAD</div>
+    
+    <div id="loginForm">
+        <h3>تسجيل الدخول</h3>
+        <input type="email" id="loginEmail" placeholder="البريد الإلكتروني">
+        <input type="password" id="loginPass" placeholder="كلمة المرور">
+        <button onclick="login()">دخول</button>
+        <p class="switch" onclick="toggleForm()">ليس لديك حساب؟ سجل الآن</p>
+    </div>
+
+    <div id="registerForm" style="display: none;">
+        <h3>إنشاء حساب جديد</h3>
+        <input type="text" id="regName" placeholder="الاسم بالكامل">
+        <input type="email" id="regEmail" placeholder="البريد الإلكتروني">
+        <input type="password" id="regPass" placeholder="كلمة المرور">
+        <button onclick="register()">إنشاء الحساب</button>
+        <p class="switch" onclick="toggleForm()">لديك حساب بالفعل؟ سجل دخول</p>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+<script>
+    // بيانات مشروعك ZAD اللي ظهرت في الصور
+    const firebaseConfig = {
+        apiKey: "AIzaSyD379pvOYPJTNrpUSJZpTGgdqizeKwcWJI",
+        authDomain: "zad-752ea.firebaseapp.com",
+        projectId: "zad-752ea",
+        storageBucket: "zad-752ea.firebasestorage.app",
+        messagingSenderId: "213514981477",
+        appId: "1:213514981477:web:94ae7be1307b3d6dbf688c"
+    };
+    
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
+
+    function toggleForm() {
+        const login = document.getElementById('loginForm');
+        const reg = document.getElementById('registerForm');
+        login.style.display = login.style.display === 'none' ? 'block' : 'none';
+        reg.style.display = reg.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // وظيفة تسجيل الدخول
+    function login() {
+        const email = document.getElementById('loginEmail').value;
+        const pass = document.getElementById('loginPass').value;
+        
+        firebase.auth().signInWithEmailAndPassword(email, pass)
+        .then(userCredential => {
+            // التأكد إن العميل فعل إيميله
+            if (!userCredential.user.emailVerified) {
+                alert("يا بطل، لازم تفعل الإيميل الأول! شيك على الـ Inbox.");
+                userCredential.user.sendEmailVerification();
+                firebase.auth().signOut();
+            } else {
+                alert("تم تسجيل الدخول بنجاح!");
+                window.location.href = "action://home"; // التوجه للرئيسية في موبيزي
+            }
+        }).catch(err => alert("خطأ في الدخول: " + err.message));
+    }
+
+    // وظيفة إنشاء الحساب وتخزين بيانات العميل
+    function register() {
+        const name = document.getElementById('regName').value;
+        const email = document.getElementById('regEmail').value;
+        const pass = document.getElementById('regPass').value;
+        
+        if(!name || !email || !pass) { alert("اكتب بياناتك كاملة يا وحش"); return; }
+
+        firebase.auth().createUserWithEmailAndPassword(email, pass)
+        .then(userCredential => {
+            // إرسال رسالة تفعيل الإيميل
+            userCredential.user.sendEmailVerification();
+            
+            // حفظ بيانات العميل في Firestore زي ما شفت مع مصطفى
+            db.collection("Users").doc(userCredential.user.uid).set({
+                fullName: name,
+                email: email,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                alert("تم إنشاء حسابك! روح فعل الإيميل وارجع سجل دخول عشان تطلب أوردرك ✅");
+                toggleForm();
+            });
+        }).catch(err => alert("خطأ في التسجيل: " + err.message));
+    }
+</script>
+</body>
+</html>

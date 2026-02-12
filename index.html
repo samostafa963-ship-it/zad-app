@@ -3,37 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZAD | دخول وتسجيل</title>
+    <title>ZAD - دخول وتسجيل</title>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background: #fff; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
-        .logo { color: #ff6d00; font-size: 35px; font-weight: bold; margin-bottom: 20px; }
-        input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 12px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 15px; background: #ff6d00; color: #fff; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .switch { margin-top: 15px; color: #666; font-size: 14px; cursor: pointer; text-decoration: underline; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
+        h2 { color: #ff6d00; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background-color: #ff6d00; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .toggle-link { color: #007bff; cursor: pointer; margin-top: 15px; display: block; font-size: 14px; text-decoration: underline; }
+        #message { margin-top: 15px; font-size: 13px; color: red; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="logo">ZAD</div>
+<div class="card">
+    <h2 id="formTitle">تسجيل الدخول</h2>
     
-    <div id="loginForm">
-        <h3>تسجيل الدخول</h3>
-        <input type="email" id="loginEmail" placeholder="البريد الإلكتروني">
-        <input type="password" id="loginPass" placeholder="كلمة المرور">
-        <button onclick="login()">دخول</button>
-        <p class="switch" onclick="toggleForm()">ليس لديك حساب؟ سجل الآن</p>
+    <div id="nameField" style="display: none;">
+        <input type="text" id="userName" placeholder="الاسم بالكامل">
     </div>
-
-    <div id="registerForm" style="display: none;">
-        <h3>إنشاء حساب جديد</h3>
-        <input type="text" id="regName" placeholder="الاسم بالكامل">
-        <input type="email" id="regEmail" placeholder="البريد الإلكتروني">
-        <input type="password" id="regPass" placeholder="كلمة المرور">
-        <button onclick="register()">إنشاء الحساب</button>
-        <p class="switch" onclick="toggleForm()">لديك حساب بالفعل؟ سجل دخول</p>
-    </div>
+    
+    <input type="email" id="userEmail" placeholder="البريد الإلكتروني">
+    <input type="password" id="userPass" placeholder="كلمة المرور">
+    
+    <button id="mainBtn" onclick="handleAuth()">دخول</button>
+    
+    <span class="toggle-link" id="toggleLink" onclick="toggleView()">ليس لديك حساب؟ إنشاء حساب جديد</span>
+    <div id="message"></div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -41,7 +37,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
 <script>
-    // بيانات مشروعك ZAD اللي ظهرت في الصور
+    // إعدادات Firebase الخاصة بمشروعك zad-752ea
     const firebaseConfig = {
         apiKey: "AIzaSyD379pvOYPJTNrpUSJZpTGgdqizeKwcWJI",
         authDomain: "zad-752ea.firebaseapp.com",
@@ -50,61 +46,53 @@
         messagingSenderId: "213514981477",
         appId: "1:213514981477:web:94ae7be1307b3d6dbf688c"
     };
-    
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    const db = firebase.firestore();
+    firebase.initializeApp(firebaseConfig);
 
-    function toggleForm() {
-        const login = document.getElementById('loginForm');
-        const reg = document.getElementById('registerForm');
-        login.style.display = login.style.display === 'none' ? 'block' : 'none';
-        reg.style.display = reg.style.display === 'none' ? 'block' : 'none';
-    }
+    let isLoginView = true;
+    const msg = document.getElementById('message');
 
-    // وظيفة تسجيل الدخول
-    function login() {
-        const email = document.getElementById('loginEmail').value;
-        const pass = document.getElementById('loginPass').value;
-        
-        firebase.auth().signInWithEmailAndPassword(email, pass)
-        .then(userCredential => {
-            // التأكد إن العميل فعل إيميله
-            if (!userCredential.user.emailVerified) {
-                alert("يا بطل، لازم تفعل الإيميل الأول! شيك على الـ Inbox.");
-                userCredential.user.sendEmailVerification();
-                firebase.auth().signOut();
-            } else {
-                alert("تم تسجيل الدخول بنجاح!");
-                window.location.href = "action://home"; // التوجه للرئيسية في موبيزي
-            }
-        }).catch(err => alert("خطأ في الدخول: " + err.message));
+    function toggleView() {
+        isLoginView = !isLoginView;
+        document.getElementById('formTitle').innerText = isLoginView ? "تسجيل الدخول" : "إنشاء حساب جديد";
+        document.getElementById('mainBtn').innerText = isLoginView ? "دخول" : "إنشاء الحساب";
+        document.getElementById('toggleLink').innerText = isLoginView ? "ليس لديك حساب؟ إنشاء حساب جديد" : "لديك حساب؟ سجل دخول";
+        document.getElementById('nameField').style.display = isLoginView ? "none" : "block";
+        msg.innerText = "";
     }
 
-    // وظيفة إنشاء الحساب وتخزين بيانات العميل
-    function register() {
-        const name = document.getElementById('regName').value;
-        const email = document.getElementById('regEmail').value;
-        const pass = document.getElementById('regPass').value;
-        
-        if(!name || !email || !pass) { alert("اكتب بياناتك كاملة يا وحش"); return; }
+    function handleAuth() {
+        const email = document.getElementById('userEmail').value;
+        const pass = document.getElementById('userPass').value;
+        const name = document.getElementById('userName').value;
 
-        firebase.auth().createUserWithEmailAndPassword(email, pass)
-        .then(userCredential => {
-            // إرسال رسالة تفعيل الإيميل
-            userCredential.user.sendEmailVerification();
-            
-            // حفظ بيانات العميل في Firestore زي ما شفت مع مصطفى
-            db.collection("Users").doc(userCredential.user.uid).set({
-                fullName: name,
-                email: email,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                alert("تم إنشاء حسابك! روح فعل الإيميل وارجع سجل دخول عشان تطلب أوردرك ✅");
-                toggleForm();
-            });
-        }).catch(err => alert("خطأ في التسجيل: " + err.message));
+        if (isLoginView) {
+            // تسجيل الدخول
+            firebase.auth().signInWithEmailAndPassword(email, pass)
+            .then((u) => {
+                if(u.user.emailVerified) {
+                    // إذا كان الحساب مفعل، حوله لصفحة موبيزي الرئيسية
+                    window.location.href = "action://home"; 
+                } else {
+                    msg.innerText = "يرجى تفعيل بريدك الإلكتروني أولاً!";
+                    u.user.sendEmailVerification();
+                    firebase.auth().signOut();
+                }
+            }).catch(e => msg.innerText = "خطأ: " + e.message);
+        } else {
+            // إنشاء حساب جديد
+            firebase.auth().createUserWithEmailAndPassword(email, pass)
+            .then((u) => {
+                u.user.sendEmailVerification();
+                // حفظ الاسم في Firestore
+                firebase.firestore().collection("Users").doc(u.user.uid).set({
+                    fullName: name,
+                    email: email
+                }).then(() => {
+                    alert("تم التسجيل! فعل إيميلك وارجع سجل دخول.");
+                    toggleView();
+                });
+            }).catch(e => msg.innerText = "خطأ: " + e.message);
+        }
     }
 </script>
 </body>
